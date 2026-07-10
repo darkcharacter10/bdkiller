@@ -4,14 +4,15 @@
 const SUPABASE_URL = 'https://shgccltzjmeeeycvqyiu.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_I3lVPAHunarUWcSfMfBZXw_qSttvTki';
 
-let supabase = null;
+// CHANGED: Renamed to myDb so it never fights with the Supabase CDN library
+let myDb = null;
 let pointer = 0;           
 let bookElements = []; 
 let localFallbackArray = []; 
 
 try {
     if (typeof window.supabase !== 'undefined' && SUPABASE_URL) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        myDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 } catch(e) {
     console.error("Supabase engine connection failed:", e);
@@ -27,7 +28,7 @@ function assignClickAction(id, actionFunction) {
 
 // This runs instantly when the page structure mounts
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Instantly power the page-turning buttons so they are completely unblocked
+    // 1. Instantly power the page-turning buttons
     assignClickAction('prev-btn', stepBackward);
     assignClickAction('next-btn', stepForward);
     assignClickAction('add-page-btn', handleMemoryAddition);
@@ -63,14 +64,14 @@ async function syncDatabaseMemories() {
     localFallbackArray = cached ? JSON.parse(cached) : [];
     const coverText = document.getElementById('cover-instruction');
 
-    if (!supabase) {
+    if (!myDb) {
         if (coverText) coverText.innerText = "Running locally. Tap cover to open!";
         renderLivePages(localFallbackArray);
         return;
     }
 
     try {
-        const { data: memories, error } = await supabase
+        const { data: memories, error } = await myDb
             .from('kbday')
             .select('*')
             .order('display_order', { ascending: true });
@@ -129,7 +130,7 @@ async function handleMemoryAddition() {
         reader.readAsDataURL(targetFile);
     };
 
-    if (!supabase) {
+    if (!myDb) {
         localSaveFallback();
         return;
     }
@@ -138,19 +139,19 @@ async function handleMemoryAddition() {
     const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
 
     try {
-        const { data: storageData, error: storageError } = await supabase.storage
+        const { data: storageData, error: storageError } = await myDb.storage
             .from('birthday-photos')
             .upload(uniqueFileName, targetFile);
 
         if (storageError) throw storageError;
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = myDb.storage
             .from('birthday-photos')
             .getPublicUrl(uniqueFileName);
 
         const publicImageUrl = urlData.publicUrl;
 
-        const { error: dbError } = await supabase
+        const { error: dbError } = await myDb
             .from('kbday')
             .insert([{ image_url: publicImageUrl, caption: captionInput.value.trim() || "A beautiful memory..." }]);
 
