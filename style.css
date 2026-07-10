@@ -14,12 +14,13 @@ body {
     background-size: 24px 24px;
     background-position: 0 0, 12px 12px;
     min-height: 100vh;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     perspective: 2000px;
+    padding: 15px;
+    overflow-x: hidden;
 }
 
 /* ==========================================================================
@@ -29,9 +30,9 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 35px;
+    gap: 25px;
     width: 100%;
-    max-width: 900px;
+    max-width: 420px; /* Locked to perfect mobile width scale */
     z-index: 10;
 }
 
@@ -41,37 +42,43 @@ body {
 .controls {
     display: flex;
     gap: 15px;
+    width: 100%;
+    justify-content: center;
 }
 
 .nav-btn {
     background: #fffcf5;
     border: 1px solid #c8beab;
     color: #5c5549;
-    padding: 0.6rem 1.5rem;
-    border-radius: 4px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
     cursor: pointer;
     font-family: 'Georgia', serif;
     font-weight: bold;
+    font-size: 1rem;
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    touch-action: manipulation; /* Optimizes mobile tap response times */
 }
 
-.nav-btn:hover {
+.nav-btn:hover, .nav-btn:active {
     background: #fcf6e8;
     border-color: #8c2f39;
     color: #8c2f39;
 }
 
 /* ==========================================================================
-   4. 3D BOOK & INDIVIDUAL PAGE GEOMETRY
+   4. 3D BOOK & INDIVIDUAL PAGE GEOMETRY (Fluid Responsive Controls)
    ========================================================================== */
 .book {
     position: relative;
-    width: 420px;
-    height: 530px;
+    width: 100%;
+    max-width: 380px; /* Dynamic shrinkage logic for small screens */
+    height: 480px;
     transform-style: preserve-3d;
     transform: rotateX(10deg);
     transition: transform 1s ease;
+    margin: 0 auto;
 }
 
 .page {
@@ -94,7 +101,7 @@ body {
 .page-content {
     width: 100%;
     height: 100%;
-    padding: 2.5rem;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -123,10 +130,11 @@ body {
 
 .cover.front {
     z-index: 500;
+    cursor: pointer;
 }
 
 .cover.front h2 {
-    font-size: 2.4rem;
+    font-size: 2rem;
     margin-bottom: 10px;
     border-bottom: 1px solid #e6ce9c;
     padding-bottom: 10px;
@@ -138,8 +146,8 @@ body {
 }
 
 .cover.front .instruction {
-    margin-top: 4rem;
-    font-size: 0.85rem;
+    margin-top: 3rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #c4af84;
@@ -155,9 +163,9 @@ body {
    ========================================================================== */
 .img-container {
     width: 100%;
-    height: 68%;
+    height: 65%;
     background: #ffffff;
-    padding: 12px 12px 45px 12px;
+    padding: 8px 8px 35px 8px;
     border: 1px solid #e2dac6;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
@@ -173,10 +181,11 @@ body {
     text-align: center;
     font-style: italic;
     color: #423b32;
-    font-size: 1.1rem;
-    line-height: 1.5;
-    height: 60px;
+    font-size: 1rem;
+    line-height: 1.4;
+    height: 50px;
     overflow-y: auto;
+    margin-top: 10px;
 }
 
 .page-num {
@@ -186,52 +195,70 @@ body {
 }
 
 /* ==========================================================================
-   6. ADMIN DOCK CONTROL PANEL
+   6. ADMIN DOCK CONTROL PANEL (Optimized for Mobile Keyboards)
    ========================================================================== */
 .admin-dock {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
+    position: relative;
+    width: 100%;
+    max-width: 420px;
     background: #fffcf5;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     border: 1px solid #c8beab;
-    z-index: 2000;
-    max-width: 320px;
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    z-index: 2000;
 }
 
-.admin-dock h3 {
-    font-size: 1.1rem;
-    color: #8c2f39;
-    border-bottom: 1px solid #eae5d8;
-    padding-bottom: 6px;
+/* For larger displays, allow the control panel to anchor elegantly to the bottom right */
+@media (min-width: 768px) {
+    body {
+        padding: 30px;
+    }
+    .album-container {
+        max-width: 900px;
+    }
+    .book {
+        width: 420px;
+        max-width: 420px;
+        height: 530px;
+    }
+    .admin-dock {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 320px;
+        margin-top: 0;
+    }
 }
 
 .dock-input {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     border: 1px solid #c8beab;
     border-radius: 4px;
     font-family: serif;
     background: #fffdf9;
+    font-size: 1rem;
 }
 
 .dock-btn {
     background: #8c2f39;
     color: white;
     border: none;
-    padding: 8px;
+    padding: 12px;
     border-radius: 4px;
     font-weight: bold;
+    font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s;
+    touch-action: manipulation;
 }
 
-.dock-btn:hover:not(:disabled) {
+.dock-btn:hover, .dock-btn:active {
     background: #b83b4b;
 }
 
