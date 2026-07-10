@@ -14,50 +14,44 @@ try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 } catch(e) {
-    console.error("Supabase failed to initialize:", e);
+    console.error("Supabase engine connection failed:", e);
 }
 
-// Mobile-optimized event binder helper function
-function bindEvent(elementId, actionFunction) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    
-    // Bind touch events for mobile, fallback to click for desktop
-    el.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Prevents double-trigger clicks on mobile devices
-        actionFunction();
-    }, { passive: false });
-
-    el.addEventListener('click', (e) => {
-        actionFunction();
-    });
+// Click event routing helper function
+function assignClickAction(id, actionFunction) {
+    const targetElement = document.getElementById(id);
+    if (targetElement) {
+        targetElement.onclick = actionFunction;
+    }
 }
 
+// This runs instantly when the page structure mounts
 document.addEventListener('DOMContentLoaded', () => {
-    // Force immediate layout navigation event attachments
-    bindEvent('prev-btn', stepBackward);
-    bindEvent('next-btn', stepForward);
-    bindEvent('add-page-btn', handleMemoryAddition);
+    // 1. Instantly power the page-turning buttons so they are completely unblocked
+    assignClickAction('prev-btn', stepBackward);
+    assignClickAction('next-btn', stepForward);
+    assignClickAction('add-page-btn', handleMemoryAddition);
     
-    // Special tracking handler for flipping the cover leaf directly on tap
     const coverSheet = document.getElementById('page-0');
     if (coverSheet) {
-        coverSheet.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            stepForward();
-        }, { passive: false });
-        coverSheet.addEventListener('click', stepForward);
+        coverSheet.onclick = stepForward;
     }
 
-    updateBookViewContext();
+    updateBookElementsContext();
 
-    // Safely query server metrics completely disconnected from the rendering pipeline thread
+    // 2. Change the cover text to confirm the script is alive
+    const coverText = document.getElementById('cover-instruction');
+    if (coverText) {
+        coverText.innerText = "Syncing with cloud memory lane...";
+    }
+
+    // 3. Defer the database query so it can never lock the buttons
     setTimeout(() => {
         syncDatabaseMemories();
-    }, 150);
+    }, 100);
 });
 
-function updateBookViewContext() {
+function updateBookElementsContext() {
     bookElements = document.querySelectorAll('.page');
 }
 
@@ -67,8 +61,10 @@ function updateBookViewContext() {
 async function syncDatabaseMemories() {
     const cached = localStorage.getItem('local_kbday_backup');
     localFallbackArray = cached ? JSON.parse(cached) : [];
+    const coverText = document.getElementById('cover-instruction');
 
     if (!supabase) {
+        if (coverText) coverText.innerText = "Running locally. Tap cover to open!";
         renderLivePages(localFallbackArray);
         return;
     }
@@ -80,14 +76,21 @@ async function syncDatabaseMemories() {
             .order('display_order', { ascending: true });
 
         if (error) {
-            console.error("Database connection dropped:", error.message);
+            console.error("Server query failed:", error.message);
+            if (coverText) coverText.innerText = "Server offline. Tap cover to open local mode!";
             renderLivePages(localFallbackArray);
             return;
         }
 
-        renderLivePages(memories && memories.length > 0 ? memories : localFallbackArray);
+        if (memories && memories.length > 0) {
+            renderLivePages(memories);
+        } else {
+            if (coverText) coverText.innerText = "Book empty! Use bottom-right panel to add a page.";
+            renderLivePages(localFallbackArray);
+        }
     } catch (err) {
-        console.warn("Network timeout, using sandboxed data arrays:", err.message);
+        console.warn("Connection timeout:", err.message);
+        if (coverText) coverText.innerText = "Timeout. Tap cover to open local mode!";
         renderLivePages(localFallbackArray);
     }
 }
@@ -103,7 +106,7 @@ async function handleMemoryAddition() {
     }
 
     const targetFile = fileInput.files[0];
-    uploadBtn.innerText = "Saving to Cloud... ⏳";
+    uploadBtn.innerText = "Uploading... ⏳";
     uploadBtn.disabled = true;
 
     const localSaveFallback = () => {
@@ -121,7 +124,7 @@ async function handleMemoryAddition() {
             uploadBtn.disabled = false;
             
             renderLivePages(localFallbackArray);
-            alert("Upload alert: Saved locally in standby mode. Make sure your storage bucket public policies are fully active!");
+            alert("Saved to local browser context! (Check your Supabase storage rules for shared cloud mode)");
         };
         reader.readAsDataURL(targetFile);
     };
@@ -135,24 +138,18 @@ async function handleMemoryAddition() {
     const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
 
     try {
-        // 1. Storage bucket binary push stream operation
         const { data: storageData, error: storageError } = await supabase.storage
             .from('birthday-photos')
-            .upload(uniqueFileName, targetFile, {
-                cacheControl: '3600',
-                upsert: false
-            });
+            .upload(uniqueFileName, targetFile);
 
         if (storageError) throw storageError;
 
-        // 2. Fetch public object route URL reference
         const { data: urlData } = supabase.storage
             .from('birthday-photos')
             .getPublicUrl(uniqueFileName);
 
         const publicImageUrl = urlData.publicUrl;
 
-        // 3. Write data tracking parameters to row
         const { error: dbError } = await supabase
             .from('kbday')
             .insert([{ image_url: publicImageUrl, caption: captionInput.value.trim() || "A beautiful memory..." }]);
@@ -161,11 +158,11 @@ async function handleMemoryAddition() {
 
         fileInput.value = "";
         captionInput.value = "";
-        alert("Memory uploaded and saved perfectly to the cloud! 🎉");
+        alert("Memory page saved cleanly to the cloud server! 🎉");
         await syncDatabaseMemories();
 
     } catch (err) {
-        console.error("Cloud tracking transaction rejected:", err.message);
+        console.error("Cloud action blocked:", err.message);
         localSaveFallback();
     } finally {
         uploadBtn.innerText = "Upload Memory Page";
@@ -203,13 +200,13 @@ function renderLivePages(memoriesArray) {
         bookContainer.insertBefore(sheetElement, endLeaf);
     });
 
-    updateBookViewContext();
+    updateBookElementsContext();
     endLeaf.style.zIndex = "0";
 
     if (memoriesArray.length > 0) {
-        coverInstruction.innerText = "Tap Next Page or tap the cover sheet elements to look inside";
+        if (coverInstruction) coverInstruction.innerText = "Click 'Next Page' or click the cover to flip inside!";
     } else {
-        coverInstruction.innerText = "Use the panel below to upload beautiful moments!";
+        if (coverInstruction) coverInstruction.innerText = "Use the loader panel on the right to add photos!";
     }
 
     resetBookStateStyleAnchors();
