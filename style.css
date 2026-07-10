@@ -24,7 +24,65 @@ body {
 }
 
 /* ==========================================================================
-   2. 3D ALBUM WRAPPER MODULE
+   2. GREETING CARD OVERLAY (Brought Back)
+   ========================================================================== */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(44, 26, 29, 0.95), rgba(99, 43, 48, 0.95));
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-container {
+    background: #fffcf5;
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    text-align: center;
+    max-width: 480px;
+    width: 90%;
+    border: 1px solid #d4af37;
+}
+
+.bounce-text {
+    color: #8c2f39;
+    margin-bottom: 1.5rem;
+    font-size: 2.3rem;
+    font-weight: 700;
+}
+
+.card-container p {
+    color: #5c5549;
+    line-height: 1.7;
+    font-size: 1.05rem;
+    margin-bottom: 2rem;
+}
+
+#open-btn {
+    background: linear-gradient(135deg, #b83b4b, #8c2f39);
+    color: #fffcf5;
+    padding: 0.85rem 2.5rem;
+    border: 1px solid #70222a;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+#open-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(140,47,57,0.4);
+}
+
+/* ==========================================================================
+   3. 3D ALBUM WRAPPER MODULE
    ========================================================================== */
 .album-container {
     display: flex;
@@ -32,12 +90,12 @@ body {
     align-items: center;
     gap: 25px;
     width: 100%;
-    max-width: 420px; /* Locked to perfect mobile width scale */
+    max-width: 420px;
     z-index: 10;
 }
 
 /* ==========================================================================
-   3. NAVIGATION BUTTONS
+   4. NAVIGATION BUTTONS
    ========================================================================== */
 .controls {
     display: flex;
@@ -58,7 +116,7 @@ body {
     font-size: 1rem;
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    touch-action: manipulation; /* Optimizes mobile tap response times */
+    touch-action: manipulation;
 }
 
 .nav-btn:hover, .nav-btn:active {
@@ -68,12 +126,12 @@ body {
 }
 
 /* ==========================================================================
-   4. 3D BOOK & INDIVIDUAL PAGE GEOMETRY (Fluid Responsive Controls)
+   5. 3D BOOK & INDIVIDUAL PAGE GEOMETRY
    ========================================================================== */
 .book {
     position: relative;
     width: 100%;
-    max-width: 380px; /* Dynamic shrinkage logic for small screens */
+    max-width: 380px;
     height: 480px;
     transform-style: preserve-3d;
     transform: rotateX(10deg);
@@ -107,6 +165,7 @@ body {
     justify-content: space-between;
     border-left: 4px solid rgba(0,0,0,0.06);
     background: linear-gradient(to right, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 5%);
+    position: relative; /* Added for delete button positioning */
 }
 
 .cover {
@@ -159,7 +218,7 @@ body {
 }
 
 /* ==========================================================================
-   5. INTERNAL POLAROID PHOTO DISPLAY STYLES
+   6. INTERNAL POLAROID PHOTO DISPLAY STYLES
    ========================================================================== */
 .img-container {
     width: 100%;
@@ -195,7 +254,7 @@ body {
 }
 
 /* ==========================================================================
-   6. ADMIN DOCK CONTROL PANEL (Optimized for Mobile Keyboards)
+   7. ADMIN DOCK CONTROL PANEL
    ========================================================================== */
 .admin-dock {
     position: relative;
@@ -213,19 +272,10 @@ body {
     z-index: 2000;
 }
 
-/* For larger displays, allow the control panel to anchor elegantly to the bottom right */
 @media (min-width: 768px) {
-    body {
-        padding: 30px;
-    }
-    .album-container {
-        max-width: 900px;
-    }
-    .book {
-        width: 420px;
-        max-width: 420px;
-        height: 530px;
-    }
+    body { padding: 30px; }
+    .album-container { max-width: 900px; }
+    .book { width: 420px; max-width: 420px; height: 530px; }
     .admin-dock {
         position: fixed;
         bottom: 20px;
@@ -258,11 +308,33 @@ body {
     touch-action: manipulation;
 }
 
-.dock-btn:hover, .dock-btn:active {
-    background: #b83b4b;
+.dock-btn:hover, .dock-btn:active { background: #b83b4b; }
+.dock-btn:disabled { background: #a39986; cursor: not-allowed; }
+
+/* ==========================================================================
+   8. DELETE BUTTON STYLES
+   ========================================================================== */
+.delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(140, 47, 57, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 50;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.dock-btn:disabled {
-    background: #a39986;
-    cursor: not-allowed;
+.delete-btn:hover {
+    background: rgba(140, 47, 57, 1);
+    transform: scale(1.1);
 }
