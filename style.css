@@ -165,7 +165,7 @@ body {
     justify-content: space-between;
     border-left: 4px solid rgba(0,0,0,0.06);
     background: linear-gradient(to right, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 5%);
-    position: relative; /* Added for delete button positioning */
+    position: relative;
 }
 
 .cover {
