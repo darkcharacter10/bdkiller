@@ -1,0 +1,241 @@
+/* ==========================================================================
+   1. CORE RESET & BASE LAYOUT THEME
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Georgia', serif;
+    background-color: #f2ebd9;
+    background-image: radial-gradient(#dfd3b6 1px, transparent 1px), radial-gradient(#dfd3b6 1px, #f2ebd9 1px);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    perspective: 2000px;
+}
+
+/* ==========================================================================
+   2. 3D ALBUM WRAPPER MODULE
+   ========================================================================== */
+.album-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 35px;
+    width: 100%;
+    max-width: 900px;
+    z-index: 10;
+}
+
+/* ==========================================================================
+   3. NAVIGATION BUTTONS
+   ========================================================================== */
+.controls {
+    display: flex;
+    gap: 15px;
+}
+
+.nav-btn {
+    background: #fffcf5;
+    border: 1px solid #c8beab;
+    color: #5c5549;
+    padding: 0.6rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.nav-btn:hover {
+    background: #fcf6e8;
+    border-color: #8c2f39;
+    color: #8c2f39;
+}
+
+/* ==========================================================================
+   4. 3D BOOK & INDIVIDUAL PAGE GEOMETRY
+   ========================================================================== */
+.book {
+    position: relative;
+    width: 420px;
+    height: 530px;
+    transform-style: preserve-3d;
+    transform: rotateX(10deg);
+    transition: transform 1s ease;
+}
+
+.page {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: #fffdf9;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), z-index 0.8s ease;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 0 6px 6px 0;
+    overflow: hidden;
+}
+
+.page-content {
+    width: 100%;
+    height: 100%;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-left: 4px solid rgba(0,0,0,0.06);
+    background: linear-gradient(to right, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 5%);
+}
+
+.cover {
+    background: linear-gradient(135deg, #5c1e25, #3b1115);
+    color: #e6ce9c;
+    box-shadow: 5px 5px 25px rgba(0,0,0,0.3);
+}
+
+.cover .page-content {
+    border-left: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 2px solid #7a2b34;
+    margin: 10px;
+    height: calc(100% - 20px);
+    width: calc(100% - 20px);
+    border-radius: 4px;
+    background: transparent;
+}
+
+.cover.front {
+    z-index: 500;
+}
+
+.cover.front h2 {
+    font-size: 2.4rem;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e6ce9c;
+    padding-bottom: 10px;
+}
+
+.cover.front .subtitle {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.cover.front .instruction {
+    margin-top: 4rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #c4af84;
+}
+
+.cover.back {
+    z-index: 0;
+    box-shadow: -5px 5px 20px rgba(0,0,0,0.3);
+}
+
+/* ==========================================================================
+   5. INTERNAL POLAROID PHOTO DISPLAY STYLES
+   ========================================================================== */
+.img-container {
+    width: 100%;
+    height: 68%;
+    background: #ffffff;
+    padding: 12px 12px 45px 12px;
+    border: 1px solid #e2dac6;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 1px solid #eae5d8;
+}
+
+.caption-area {
+    text-align: center;
+    font-style: italic;
+    color: #423b32;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    height: 60px;
+    overflow-y: auto;
+}
+
+.page-num {
+    text-align: right;
+    font-size: 0.8rem;
+    color: #a39986;
+}
+
+/* ==========================================================================
+   6. ADMIN DOCK CONTROL PANEL
+   ========================================================================== */
+.admin-dock {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #fffcf5;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    border: 1px solid #c8beab;
+    z-index: 2000;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-dock h3 {
+    font-size: 1.1rem;
+    color: #8c2f39;
+    border-bottom: 1px solid #eae5d8;
+    padding-bottom: 6px;
+}
+
+.dock-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #c8beab;
+    border-radius: 4px;
+    font-family: serif;
+    background: #fffdf9;
+}
+
+.dock-btn {
+    background: #8c2f39;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.dock-btn:hover:not(:disabled) {
+    background: #b83b4b;
+}
+
+.dock-btn:disabled {
+    background: #a39986;
+    cursor: not-allowed;
+}
