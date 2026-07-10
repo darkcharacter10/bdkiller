@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday! 🎉</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ==========================================================================
+           1. CORE RESET & BASE LAYOUT THEME
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #f2ebd9;
+            background-image: radial-gradient(#dfd3b6 1px, transparent 1px), radial-gradient(#dfd3b6 1px, #f2ebd9 1px);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            perspective: 2000px;
+        }
+
+        /* ==========================================================================
+           2. INTRODUCTORY GREETING CARD OVERLAY
+           ========================================================================== */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(44, 26, 29, 0.95), rgba(99, 43, 48, 0.95));
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-container {
+            background: #fffcf5;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            text-align: center;
+            max-width: 480px;
+            border: 1px solid #d4af37;
+        }
+
+        .bounce-text {
+            color: #8c2f39;
+            margin-bottom: 1.5rem;
+            font-size: 2.3rem;
+            font-weight: 700;
+            animation: bounce 2s infinite;
+        }
+
+        .card-container p {
+            color: #5c5549;
+            line-height: 1.7;
+            font-size: 1.05rem;
+            margin-bottom: 2rem;
+        }
+
+        #open-btn {
+            background: linear-gradient(135deg, #b83b4b, #8c2f39);
+            color: #fffcf5;
+            padding: 0.85rem 2.5rem;
+            border: 1px solid #70222a;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        #open-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(140,47,57,0.4);
+        }
+
+        /* ==========================================================================
+           3. 3D ALBUM WRAPPER MODULE
+           ========================================================================== */
+        .album-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 35px;
+            width: 100%;
+            max-width: 900px;
+            z-index: 10;
+        }
+
+        /* ==========================================================================
+           4. NAVIGATION BUTTONS
+           ========================================================================== */
+        .controls {
+            display: flex;
+            gap: 15px;
+            display: none;
+        }
+
+        .nav-btn {
+            background: #fffcf5;
+            border: 1px solid #c8beab;
+            color: #5c5549;
+            padding: 0.6rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .nav-btn:hover {
+            background: #fcf6e8;
+            border-color: #8c2f39;
+            color: #8c2f39;
+        }
+
+        /* ==========================================================================
+           5. 3D BOOK & INDIVIDUAL PAGE GEOMETRY
+           ========================================================================== */
+        .book {
+            position: relative;
+            width: 420px;
+            height: 530px;
+            transform-style: preserve-3d;
+            transform: rotateX(10deg);
+            transition: transform 1s ease;
+        }
+
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: #fffdf9;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), z-index 0.8s ease;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 0 6px 6px 0;
+            overflow: hidden;
+        }
+
+        .page-content {
+            width: 100%;
+            height: 100%;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-left: 4px solid rgba(0,0,0,0.06);
+            background: linear-gradient(to right, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 5%);
+        }
+
+        .cover {
+            background: linear-gradient(135deg, #5c1e25, #3b1115);
+            color: #e6ce9c;
+            box-shadow: 5px 5px 25px rgba(0,0,0,0.3);
+        }
+
+        .cover .page-content {
+            border-left: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border: 2px solid #7a2b34;
+            margin: 10px;
+            height: calc(100% - 20px);
+            width: calc(100% - 20px);
+            border-radius: 4px;
+            background: transparent;
+        }
+
+        .cover.front {
+            z-index: 500;
+        }
+
+        .cover.front h2 {
+            font-size: 2.4rem;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e6ce9c;
+            padding-bottom: 10px;
+        }
+
+        .cover.front .subtitle {
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        .cover.front .instruction {
+            margin-top: 4rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #c4af84;
+        }
+
+        .cover.back {
+            z-index: 0;
+            box-shadow: -5px 5px 20px rgba(0,0,0,0.3);
+        }
+
+        /* ==========================================================================
+           6. INTERNAL POLAROID PHOTO DISPLAY STYLES
+           ========================================================================== */
+        .img-container {
+            width: 100%;
+            height: 68%;
+            background: #ffffff;
+            padding: 12px 12px 45px 12px;
+            border: 1px solid #e2dac6;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: 1px solid #eae5d8;
+        }
+
+        .caption-area {
+            text-align: center;
+            font-style: italic;
+            color: #423b32;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            height: 60px;
+            overflow-y: auto;
+        }
+
+        .page-num {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #a39986;
+        }
+
+        /* ==========================================================================
+           7. ADMIN DOCK CONTROL PANEL
+           ========================================================================== */
+        .admin-dock {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #fffcf5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 1px solid #c8beab;
+            z-index: 2000;
+            max-width: 320px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .admin-dock h3 {
+            font-size: 1.1rem;
+            color: #8c2f39;
+            border-bottom: 1px solid #eae5d8;
+            padding-bottom: 6px;
+        }
+
+        .dock-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #c8beab;
+            border-radius: 4px;
+            font-family: serif;
+            background: #fffdf9;
+        }
+
+        .dock-btn {
+            background: #8c2f39;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .dock-btn:hover:not(:disabled) {
+            background: #b83b4b;
+        }
+
+        .dock-btn:disabled {
+            background: #a39986;
+            cursor: not-allowed;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 3000;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="greeting-overlay" class="overlay">
+        <div class="card-container">
+            <h1 class="bounce-text">🎉 Happy Birthday!</h1>
+            <p>Welcome to your memory lane workspace corner. Click below to begin.</p>
+            <button id="open-btn" onclick="executeOpenSequence()">Open Your Gift 🎁</button>
+        </div>
+    </div>
+
+    <div class="admin-dock" id="admin-dock">
+        <h3 id="dock-title">✨ Add a Server Memory</h3>
+        <input type="file" id="image-upload" accept="image/*" class="dock-input">
+        <textarea id="caption-input" placeholder="Write a beautiful description/caption here..." rows="3" class="dock-input"></textarea>
+        <button class="dock-btn" id="add-page-btn">Upload Memory Page</button>
+    </div>
+
+    <div id="album-container" class="album-container">
+        <div class="book" id="bi-fold-book">
+            <div class="page cover front" id="page-0">
+                <div class="page-content">
+                    <h2>Our Memory Lane</h2>
+                    <p class="subtitle">A collection of beautiful moments</p>
+                    <span class="instruction" id="cover-instruction">Use the loader panel to add pages!</span>
+                </div>
+            </div>
+
+            <div class="page cover back" id="back-cover">
+                <div class="page-content">
+                    <h2>The End ❤️</h2>
+                    <p>Cheers to making many more memories together!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls" id="navigation-controls">
+            <button id="prev-btn" class="nav-btn">⬅️ Previous Page</button>
+            <button id="next-btn" class="nav-btn">Next Page ➡️</button>
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        const SUPABASE_URL = 'https://jxcygucwqtdezrswpnhr.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_yt1ySZcpXvV7bUwlB6n5zg_o67ayDOh';
+        
+        let supabase = null;
+        let pointer = 0;           
+        let bookElements = []; 
+
+        // Initialize Supabase Client
+        try {
+            if (typeof window.supabase !== 'undefined') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch(e) {
+            console.error("Supabase initialization error:", e);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('prev-btn').onclick = stepBackward;
+            document.getElementById('next-btn').onclick = stepForward;
+            document.getElementById('add-page-btn').onclick = handleMemoryAddition;
+        });
+
+        // Pull memories from the server
+        async function fetchServerMemories() {
+            if (!supabase) return;
+            try {
+                const { data: memories, error } = await supabase
+                    .from('kbday')
+                    .select('*')
+                    .order('display_order', { ascending: true });
+
+                if (error) throw error;
+                if (memories) renderLivePages(memories);
+            } catch (err) {
+                console.error("Error downloading from server:", err.message);
+            }
+        }
+
+        // Handle Image Upload directly to Server
+        async function handleMemoryAddition() {
+            const fileInput = document.getElementById('image-upload');
+            const captionInput = document.getElementById('caption-input');
+            const uploadBtn = document.getElementById('add-page-btn');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Please select an image file first!");
+                return;
+            }
+
+            const targetFile = fileInput.files[0];
+            uploadBtn.innerText = "Uploading to Server... ⏳";
+            uploadBtn.disabled = true;
+
+            const fileExtension = targetFile.name.split('.').pop();
+            const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+
+            try {
+                if (!supabase) throw new Error("Supabase client not loaded.");
+
+                // 1. Upload file to Storage Bucket
+                const { data: storageData, error: storageError } = await supabase.storage
+                    .from('birthday-photos')
+                    .upload(uniqueFileName, targetFile);
+
+                if (storageError) throw storageError;
+
+                // 2. Get the public URL link
+                const { data: urlData } = supabase.storage
+                    .from('birthday-photos')
+                    .getPublicUrl(uniqueFileName);
+
+                const publicImageUrl = urlData.publicUrl;
+
+                // 3. Save link and description to the Database Table
+                const { error: dbError } = await supabase
+                    .from('kbday')
+                    .insert([{ image_url: publicImageUrl, caption: captionInput.value.trim() || "A beautiful memory..." }]);
+
+                if (dbError) throw dbError;
+
+                fileInput.value = "";
+                captionInput.value = "";
+                alert("Memory saved permanently to the server! 🎉");
+                await fetchServerMemories();
+
+            } catch (err) {
+                console.error("Server upload failed:", err.message);
+                alert(`Upload failed: ${err.message}. Make sure your Storage Bucket is set to 'Public'.`);
+            } finally {
+                uploadBtn.innerText = "Upload Memory Page";
+                uploadBtn.disabled = false;
+            }
+        }
+
+        function renderLivePages(memoriesArray) {
+            const bookContainer = document.getElementById('bi-fold-book');
+            const endLeaf = document.getElementById('back-cover');
+            const coverInstruction = document.getElementById('cover-instruction');
+
+            const dynamicSheets = bookContainer.querySelectorAll('.page:not(.cover)');
+            dynamicSheets.forEach(p => p.remove());
+
+            memoriesArray.forEach((item, index) => {
+                const sheetNumber = index + 1;
+                const sheetElement = document.createElement('div');
+                
+                sheetElement.className = 'page';
+                sheetElement.id = `dynamic-page-${sheetNumber}`;
+                sheetElement.style.zIndex = (500 - sheetNumber).toString(); 
+                
+                sheetElement.innerHTML = `
+                    <div class="page-content">
+                        <div class="img-container">
+                            <img src="${item.image_url}" alt="Memory ${sheetNumber}">
+                        </div>
+                        <div class="caption-area">
+                            <p>"${item.caption}"</p>
+                        </div>
+                        <div class="page-num">Page ${sheetNumber}</div>
+                    </div>
+                `;
+                bookContainer.insertBefore(sheetElement, endLeaf);
+            });
+
+            bookElements = document.querySelectorAll('.page');
+            endLeaf.style.zIndex = "0";
+
+            if (memoriesArray.length > 0) {
+                coverInstruction.innerText = "Click 'Next Page' below to look inside";
+            } else {
+                coverInstruction.innerText = "Use the panel on the bottom right to add memories!";
+            }
+
+            resetBookStateStyleAnchors();
+        }
+
+        function executeOpenSequence() {
+            // Remove greeting layout instantly
+            document.getElementById('greeting-overlay').style.display = 'none';
+            document.getElementById('admin-dock').style.display = 'flex';
+            
+            // Open the book cover
+            const coverSheet = document.getElementById('page-0');
+            coverSheet.style.transform = 'rotateY(-180deg)';
+            coverSheet.style.zIndex = '0'; 
+
+            pointer = 1; 
+            document.getElementById('navigation-controls').style.display = 'flex';
+            
+            runConfettiEngine();
+            
+            // Fetch live pages right after opening
+            fetchServerMemories();
+        }
+
+        function stepForward() {
+            if (pointer < bookElements.length - 1) {
+                const targetSheet = bookElements[pointer];
+                targetSheet.style.transform = 'rotateY(-180deg)';
+                
+                const cachedIndex = pointer;
+                setTimeout(() => { targetSheet.style.zIndex = cachedIndex.toString(); }, 150);
+                pointer++;
+            }
+        }
+
+        function stepBackward() {
+            if (pointer > 0) {
+                pointer--;
+                const targetSheet = bookElements[pointer];
+                targetSheet.style.transform = 'rotateY(0deg)';
+                targetSheet.style.zIndex = (500 - pointer).toString();
+            }
+        }
+
+        function resetBookStateStyleAnchors() {
+            bookElements.forEach((element, i) => {
+                if (i < pointer) {
+                    element.style.transform = 'rotateY(-180deg)';
+                    element.style.zIndex = i.toString();
+                } else {
+                    element.style.transform = 'rotateY(0deg)';
+                    element.style.zIndex = (500 - i).toString();
+                }
+            });
+        }
+
+        function runConfettiEngine() {
+            const displaySurface = document.getElementById('confetti-canvas');
+            const drawContext = displaySurface.getContext('2d');
+            
+            displaySurface.width = window.innerWidth;
+            displaySurface.height = window.innerHeight;
+
+            let particlesList = [];
+            const palette = ['#f43f5e', '#3b82f6', '#10b981', '#eab308', '#a855f7'];
+
+            for (let i = 0; i < 100; i++) {
+                particlesList.push({
+                    x: Math.random() * displaySurface.width,
+                    y: Math.random() * displaySurface.height - displaySurface.height,
+                    r: Math.random() * 6 + 4,
+                    d: Math.random() * displaySurface.height,
+                    color: palette[Math.floor(Math.random() * palette.length)],
+                    tilt: Math.random() * 10 - 5,
+                    tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+                    tiltAngle: 0
+                });
+            }
+
+            function animate() {
+                drawContext.clearRect(0, 0, displaySurface.width, displaySurface.height);
+                particlesList.forEach((p, idx) => {
+                    p.tiltAngle += p.tiltAngleIncremental;
+                    p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2; 
+                    p.x += Math.sin(p.tiltAngle);
+                    p.tilt = Math.sin(p.tiltAngle - idx / 3) * 15;
+
+                    drawContext.beginPath();
+                    drawContext.lineWidth = p.r;
+                    drawContext.strokeStyle = p.color;
+                    drawContext.moveTo(p.x + p.tilt + p.r / 2, p.y);
+                    drawContext.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+                    drawContext.stroke();
+                });
+                
+                let continuous = false;
+                particlesList.forEach((p) => { if (p.y < displaySurface.height) continuous = true; });
+                if (continuous) requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
