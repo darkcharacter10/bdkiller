@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------
-   A. SUPABASE SECURE INIT
+   A. SUPABASE CLIENT SETTINGS CONFIGURATION
    ------------------------------------------------------------- */
 const SUPABASE_URL = 'https://shgccltzjmeeeycvqyiu.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_I3lVPAHunarUWcSfMfBZXw_qSttvTki';
@@ -14,26 +14,47 @@ try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 } catch(e) {
-    console.error("Supabase client script loading error:", e);
+    console.error("Supabase failed to initialize:", e);
 }
 
-// Bind navigation elements IMMEDIATELY so layout stays completely responsive
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('prev-btn').onclick = stepBackward;
-    document.getElementById('next-btn').onclick = stepForward;
-    document.getElementById('add-page-btn').onclick = handleMemoryAddition;
+// Mobile-optimized event binder helper function
+function bindEvent(elementId, actionFunction) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
     
+    // Bind touch events for mobile, fallback to click for desktop
+    el.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevents double-trigger clicks on mobile devices
+        actionFunction();
+    }, { passive: false });
+
+    el.addEventListener('click', (e) => {
+        actionFunction();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Force immediate layout navigation event attachments
+    bindEvent('prev-btn', stepBackward);
+    bindEvent('next-btn', stepForward);
+    bindEvent('add-page-btn', handleMemoryAddition);
+    
+    // Special tracking handler for flipping the cover leaf directly on tap
     const coverSheet = document.getElementById('page-0');
     if (coverSheet) {
-        coverSheet.onclick = stepForward;
+        coverSheet.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            stepForward();
+        }, { passive: false });
+        coverSheet.addEventListener('click', stepForward);
     }
 
     updateBookViewContext();
 
-    // Defer network connection safely away from interface thread loop execution
+    // Safely query server metrics completely disconnected from the rendering pipeline thread
     setTimeout(() => {
         syncDatabaseMemories();
-    }, 100);
+    }, 150);
 });
 
 function updateBookViewContext() {
@@ -41,7 +62,7 @@ function updateBookViewContext() {
 }
 
 /* -------------------------------------------------------------
-   B. CLOUD DATA MANAGEMENT
+   B. SERVER DATA STORAGE SYNC MANAGEMENT
    ------------------------------------------------------------- */
 async function syncDatabaseMemories() {
     const cached = localStorage.getItem('local_kbday_backup');
@@ -59,14 +80,14 @@ async function syncDatabaseMemories() {
             .order('display_order', { ascending: true });
 
         if (error) {
-            console.error("Database tracking link failed. Check your SQL Editor schema settings:", error.message);
+            console.error("Database connection dropped:", error.message);
             renderLivePages(localFallbackArray);
             return;
         }
 
         renderLivePages(memories && memories.length > 0 ? memories : localFallbackArray);
     } catch (err) {
-        console.warn("Server timeout. Defaulting gracefully inside sandbox mode components:", err.message);
+        console.warn("Network timeout, using sandboxed data arrays:", err.message);
         renderLivePages(localFallbackArray);
     }
 }
@@ -82,7 +103,7 @@ async function handleMemoryAddition() {
     }
 
     const targetFile = fileInput.files[0];
-    uploadBtn.innerText = "Uploading to Server... ⏳";
+    uploadBtn.innerText = "Saving to Cloud... ⏳";
     uploadBtn.disabled = true;
 
     const localSaveFallback = () => {
@@ -100,7 +121,7 @@ async function handleMemoryAddition() {
             uploadBtn.disabled = false;
             
             renderLivePages(localFallbackArray);
-            alert("Uploaded locally! (Run the table configuration script in your new dashboard if you want it saved globally)");
+            alert("Upload alert: Saved locally in standby mode. Make sure your storage bucket public policies are fully active!");
         };
         reader.readAsDataURL(targetFile);
     };
@@ -114,18 +135,24 @@ async function handleMemoryAddition() {
     const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
 
     try {
+        // 1. Storage bucket binary push stream operation
         const { data: storageData, error: storageError } = await supabase.storage
             .from('birthday-photos')
-            .upload(uniqueFileName, targetFile);
+            .upload(uniqueFileName, targetFile, {
+                cacheControl: '3600',
+                upsert: false
+            });
 
         if (storageError) throw storageError;
 
+        // 2. Fetch public object route URL reference
         const { data: urlData } = supabase.storage
             .from('birthday-photos')
             .getPublicUrl(uniqueFileName);
 
         const publicImageUrl = urlData.publicUrl;
 
+        // 3. Write data tracking parameters to row
         const { error: dbError } = await supabase
             .from('kbday')
             .insert([{ image_url: publicImageUrl, caption: captionInput.value.trim() || "A beautiful memory..." }]);
@@ -134,11 +161,11 @@ async function handleMemoryAddition() {
 
         fileInput.value = "";
         captionInput.value = "";
-        alert("Memory saved securely on Supabase servers! 🎉");
+        alert("Memory uploaded and saved perfectly to the cloud! 🎉");
         await syncDatabaseMemories();
 
     } catch (err) {
-        console.error("Upload rejected by cloud server:", err.message);
+        console.error("Cloud tracking transaction rejected:", err.message);
         localSaveFallback();
     } finally {
         uploadBtn.innerText = "Upload Memory Page";
@@ -180,16 +207,16 @@ function renderLivePages(memoriesArray) {
     endLeaf.style.zIndex = "0";
 
     if (memoriesArray.length > 0) {
-        coverInstruction.innerText = "Click 'Next Page' or click the cover page layout elements below to flip inside";
+        coverInstruction.innerText = "Tap Next Page or tap the cover sheet elements to look inside";
     } else {
-        coverInstruction.innerText = "Use the panel on the bottom right to add memories!";
+        coverInstruction.innerText = "Use the panel below to upload beautiful moments!";
     }
 
     resetBookStateStyleAnchors();
 }
 
 /* -------------------------------------------------------------
-   C. 3D VIEW ANIMATIONS
+   C. UI VIEWPORT ANIMATION CONTROLLERS
    ------------------------------------------------------------- */
 function stepForward() {
     if (pointer < bookElements.length - 1) {
