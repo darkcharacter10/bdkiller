@@ -7,7 +7,6 @@ const SUPABASE_ANON_KEY = 'sb_publishable_I3lVPAHunarUWcSfMfBZXw_qSttvTki';
 let myDb = null;
 let pointer = 0;           
 let bookElements = []; 
-let localFallbackArray = []; 
 
 try {
     if (typeof window.supabase !== 'undefined' && SUPABASE_URL) {
@@ -27,7 +26,6 @@ function assignClickAction(id, actionFunction) {
 document.addEventListener('DOMContentLoaded', () => {
     assignClickAction('prev-btn', stepBackward);
     assignClickAction('next-btn', stepForward);
-    assignClickAction('add-page-btn', handleMemoryAddition);
     
     const coverSheet = document.getElementById('page-0');
     if (coverSheet) {
@@ -46,26 +44,26 @@ function updateBookElementsContext() {
 }
 
 /* -------------------------------------------------------------
-   B. GREETING POPUP LOGIC
+   B. GREETING POPUP LOGIC (If active)
    ------------------------------------------------------------- */
 window.executeOpenSequence = function() {
-    document.getElementById('greeting-overlay').style.display = 'none';
-    document.getElementById('admin-dock').style.display = 'flex';
-    document.getElementById('navigation-controls').style.display = 'flex';
+    const overlay = document.getElementById('greeting-overlay');
+    if(overlay) overlay.style.display = 'none';
+    
+    const navControls = document.getElementById('navigation-controls');
+    if(navControls) navControls.style.display = 'flex';
+    
     stepForward();
 };
 
 /* -------------------------------------------------------------
-   C. SERVER DATA STORAGE SYNC MANAGEMENT
+   C. SERVER DATA STORAGE SYNC (View-Only Mode)
    ------------------------------------------------------------- */
 async function syncDatabaseMemories() {
-    const cached = localStorage.getItem('local_kbday_backup');
-    localFallbackArray = cached ? JSON.parse(cached) : [];
     const coverText = document.getElementById('cover-instruction');
 
     if (!myDb) {
-        if (coverText) coverText.innerText = "Running locally. Tap cover to open!";
-        renderLivePages(localFallbackArray);
+        if (coverText) coverText.innerText = "Database connection offline.";
         return;
     }
 
@@ -77,150 +75,24 @@ async function syncDatabaseMemories() {
 
         if (error) {
             console.error("Server query failed:", error.message);
-            if (coverText) coverText.innerText = "Server offline. Tap cover to open local mode!";
-            renderLivePages(localFallbackArray);
+            if (coverText) coverText.innerText = "Server error. Try again later.";
             return;
         }
 
         if (memories && memories.length > 0) {
-            if (coverText) coverText.innerText = "Memories loaded securely.";
+            if (coverText) coverText.innerText = "Click the cover to open!";
             renderLivePages(memories);
         } else {
-            if (coverText) coverText.innerText = "Book empty! Use panel to add a page.";
-            renderLivePages(localFallbackArray);
+            if (coverText) coverText.innerText = "No memories found.";
         }
     } catch (err) {
         console.warn("Connection timeout:", err.message);
-        if (coverText) coverText.innerText = "Timeout. Tap cover to open local mode!";
-        renderLivePages(localFallbackArray);
-    }
-}
-
-async function handleMemoryAddition() {
-    const fileInput = document.getElementById('image-upload');
-    const captionInput = document.getElementById('caption-input');
-    const uploadBtn = document.getElementById('add-page-btn');
-
-    if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Please select an image file first!");
-        return;
-    }
-
-    const targetFile = fileInput.files[0];
-    uploadBtn.innerText = "Uploading... ⏳";
-    uploadBtn.disabled = true;
-
-    const localSaveFallback = () => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            localFallbackArray.push({
-                id: Date.now(), 
-                image_url: e.target.result,
-                caption: captionInput.value.trim() || "A beautiful memory..."
-            });
-            localStorage.setItem('local_kbday_backup', JSON.stringify(localFallbackArray));
-            
-            fileInput.value = "";
-            captionInput.value = "";
-            uploadBtn.innerText = "Upload Memory Page";
-            uploadBtn.disabled = false;
-            
-            renderLivePages(localFallbackArray);
-            alert("Saved to local browser context!");
-        };
-        reader.readAsDataURL(targetFile);
-    };
-
-    if (!myDb) {
-        localSaveFallback();
-        return;
-    }
-
-    const fileExtension = targetFile.name.split('.').pop();
-    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
-
-    try {
-        const { data: storageData, error: storageError } = await myDb.storage
-            .from('birthday-photos')
-            .upload(uniqueFileName, targetFile);
-
-        if (storageError) throw storageError;
-
-        const { data: urlData } = myDb.storage
-            .from('birthday-photos')
-            .getPublicUrl(uniqueFileName);
-
-        const publicImageUrl = urlData.publicUrl;
-
-        const { error: dbError } = await myDb
-            .from('kbday')
-            .insert([{ image_url: publicImageUrl, caption: captionInput.value.trim() || "A beautiful memory..." }]);
-
-        if (dbError) throw dbError;
-
-        fileInput.value = "";
-        captionInput.value = "";
-        
-        pointer = 1; 
-        
-        alert("Memory page saved cleanly to the cloud server! 🎉");
-        await syncDatabaseMemories();
-
-    } catch (err) {
-        console.error("Cloud action blocked:", err.message);
-        localSaveFallback();
-    } finally {
-        uploadBtn.innerText = "Upload Memory Page";
-        uploadBtn.disabled = false;
+        if (coverText) coverText.innerText = "Timeout loading memories.";
     }
 }
 
 /* -------------------------------------------------------------
-   D. BULLETPROOF DELETE LOGIC
-   ------------------------------------------------------------- */
-window.deleteMemory = async function(id, imageUrl) {
-    if (!confirm("Are you sure you want to permanently delete this memory?")) {
-        return;
-    }
-
-    if (!myDb) {
-        localFallbackArray = localFallbackArray.filter(item => String(item.id) !== String(id));
-        localStorage.setItem('local_kbday_backup', JSON.stringify(localFallbackArray));
-        renderLivePages(localFallbackArray);
-        return;
-    }
-
-    try {
-        // First try to delete by ID, but if ID is broken, force-delete using the image URL
-        let dbQuery = myDb.from('kbday').delete();
-        if (id && id.toString() !== 'NaN') {
-            dbQuery = dbQuery.eq('id', id);
-        } else {
-            dbQuery = dbQuery.eq('image_url', imageUrl);
-        }
-
-        const { error: dbError } = await dbQuery;
-        if (dbError) throw dbError;
-
-        try {
-            const fileName = imageUrl.split('/').pop();
-            await myDb.storage.from('birthday-photos').remove([fileName]);
-        } catch(storageErr) {
-            console.warn("Storage bucket cleanup skipped.");
-        }
-
-        pointer = 1; 
-        alert("Memory successfully deleted!");
-        await syncDatabaseMemories();
-
-    } catch (err) {
-        console.error("Delete failed:", err.message);
-        alert(`Deletion failed. Error: ${err.message}`);
-    }
-};
-
-/* -------------------------------------------------------------
-   E. PAGE RENDERING
+   D. PAGE RENDERING (Delete Button Removed)
    ------------------------------------------------------------- */
 function renderLivePages(memoriesArray) {
     const bookContainer = document.getElementById('bi-fold-book');
@@ -237,10 +109,9 @@ function renderLivePages(memoriesArray) {
         sheetElement.id = `dynamic-page-${sheetNumber}`;
         sheetElement.style.zIndex = (500 - sheetNumber).toString(); 
         
-        // CRITICAL FIX: Notice the single quotes added around '${item.id}'
+        // Notice: The <button class="delete-btn"> has been entirely removed
         sheetElement.innerHTML = `
             <div class="page-content">
-                <button class="delete-btn" onclick="window.deleteMemory('${item.id}', '${item.image_url}')">✖</button>
                 <div class="img-container">
                     <img src="${item.image_url}" alt="Memory ${sheetNumber}">
                 </div>
@@ -259,7 +130,7 @@ function renderLivePages(memoriesArray) {
 }
 
 /* -------------------------------------------------------------
-   F. UI VIEWPORT ANIMATION CONTROLLERS
+   E. UI VIEWPORT ANIMATION CONTROLLERS
    ------------------------------------------------------------- */
 function stepForward() {
     if (pointer < bookElements.length - 1) {
