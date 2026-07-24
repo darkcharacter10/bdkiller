@@ -4,25 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Happy Birthday! 🎉</title>
+    <!-- 1. Load Supabase Library ONCE in the head -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <link rel="stylesheet" href="style.css?v=6.0">
 </head>
 <body>
 
-    <div id="greeting-overlay" class="overlay">
-        <div class="card-container">
-            <h1 class="bounce-text">🎉 Happy Birthday!</h1>
-            <p>Welcome to your memory lane. Click below to begin.</p>
-            <button id="open-btn" onclick="executeOpenSequence()">Open Your Gift 🎁</button>
-        </div>
-    </div>
-
-    <div class="admin-dock" id="admin-dock" style="display: none;">
-        <h3 id="dock-title">✨ Add a Permanent Memory</h3>
-        <input type="file" id="image-upload" accept="image/*" class="dock-input">
-        <textarea id="caption-input" placeholder="Write a beautiful description/caption here..." rows="3" class="dock-input"></textarea>
-        <button class="dock-btn" id="add-page-btn">Upload Memory Page</button>
-    </div>
+    <!-- Removed the admin dock / upload panel completely -->
 
     <div id="album-container" class="album-container">
         <div class="book" id="bi-fold-book">
@@ -36,18 +24,19 @@
 
             <div class="page cover back" id="back-cover">
                 <div class="page-content">
-                    <h2>The End ❤️</h2>
-                    <p>Cheers to making many more memories together!</p>
+                    <h2>Happy Birthday! 🎂</h2>
+                    <p>I hope you loved this trip down memory lane. I can't wait to fill up the rest of these pages with you. Have the best day ever!</p>
                 </div>
             </div>
         </div>
 
-        <div class="controls" id="navigation-controls" style="display: none;">
+        <div class="controls" id="navigation-controls">
             <button id="prev-btn" class="nav-btn">⬅️ Previous Page</button>
             <button id="next-btn" class="nav-btn">Next Page ➡️</button>
         </div>
     </div>
 
-    <script src="script.js?v=4.0"></script>
+    <!-- 2. Load your custom script ONCE at the very bottom -->
+    <script src="script.js?v=6.0"></script>
 </body>
 </html>
