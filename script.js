@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateBookElementsContext();
     
-    // Check server in the background while popup is on screen
     setTimeout(() => {
         syncDatabaseMemories();
     }, 100);
@@ -49,19 +48,12 @@ function updateBookElementsContext() {
 /* -------------------------------------------------------------
    B. GREETING POPUP LOGIC
    ------------------------------------------------------------- */
-// Global function so it can be triggered from the HTML button
 window.executeOpenSequence = function() {
-    // 1. Hide the greeting popup
     document.getElementById('greeting-overlay').style.display = 'none';
-    
-    // 2. Show the controls and dock
     document.getElementById('admin-dock').style.display = 'flex';
     document.getElementById('navigation-controls').style.display = 'flex';
-    
-    // 3. Automatically flip the cover open
     stepForward();
 };
-
 
 /* -------------------------------------------------------------
    C. SERVER DATA STORAGE SYNC MANAGEMENT
@@ -121,7 +113,6 @@ async function handleMemoryAddition() {
     const localSaveFallback = () => {
         const reader = new FileReader();
         reader.onload = function(e) {
-            // Local fallback uses a temporary fake ID
             localFallbackArray.push({
                 id: Date.now(), 
                 image_url: e.target.result,
@@ -170,7 +161,6 @@ async function handleMemoryAddition() {
         fileInput.value = "";
         captionInput.value = "";
         
-        // Push the pointer back so the new page renders cleanly without breaking UI
         pointer = 1; 
         
         alert("Memory page saved cleanly to the cloud server! 🎉");
@@ -186,7 +176,7 @@ async function handleMemoryAddition() {
 }
 
 /* -------------------------------------------------------------
-   D. DELETE LOGIC
+   D. BULLETPROOF DELETE LOGIC
    ------------------------------------------------------------- */
 window.deleteMemory = async function(id, imageUrl) {
     if (!confirm("Are you sure you want to permanently delete this memory?")) {
@@ -194,37 +184,38 @@ window.deleteMemory = async function(id, imageUrl) {
     }
 
     if (!myDb) {
-        // Handle local deletion fallback
-        localFallbackArray = localFallbackArray.filter(item => item.id !== id);
+        localFallbackArray = localFallbackArray.filter(item => String(item.id) !== String(id));
         localStorage.setItem('local_kbday_backup', JSON.stringify(localFallbackArray));
         renderLivePages(localFallbackArray);
         return;
     }
 
     try {
-        // 1. Delete the row from the Supabase Database
-        const { error: dbError } = await myDb
-            .from('kbday')
-            .delete()
-            .eq('id', id);
+        // First try to delete by ID, but if ID is broken, force-delete using the image URL
+        let dbQuery = myDb.from('kbday').delete();
+        if (id && id.toString() !== 'NaN') {
+            dbQuery = dbQuery.eq('id', id);
+        } else {
+            dbQuery = dbQuery.eq('image_url', imageUrl);
+        }
 
+        const { error: dbError } = await dbQuery;
         if (dbError) throw dbError;
 
-        // 2. Try to clean up the image from the Storage bucket to save space
         try {
             const fileName = imageUrl.split('/').pop();
             await myDb.storage.from('birthday-photos').remove([fileName]);
         } catch(storageErr) {
-            console.warn("Could not delete from storage bucket, but database row removed.");
+            console.warn("Storage bucket cleanup skipped.");
         }
 
-        pointer = 1; // Reset book view to front to prevent blank pages
+        pointer = 1; 
         alert("Memory successfully deleted!");
         await syncDatabaseMemories();
 
     } catch (err) {
         console.error("Delete failed:", err.message);
-        alert(`Deletion failed. Make sure you ran the SQL query in Supabase to allow DELETEs. Error: ${err.message}`);
+        alert(`Deletion failed. Error: ${err.message}`);
     }
 };
 
@@ -234,7 +225,6 @@ window.deleteMemory = async function(id, imageUrl) {
 function renderLivePages(memoriesArray) {
     const bookContainer = document.getElementById('bi-fold-book');
     const endLeaf = document.getElementById('back-cover');
-    const coverInstruction = document.getElementById('cover-instruction');
 
     const dynamicSheets = bookContainer.querySelectorAll('.page:not(.cover)');
     dynamicSheets.forEach(p => p.remove());
@@ -247,10 +237,10 @@ function renderLivePages(memoriesArray) {
         sheetElement.id = `dynamic-page-${sheetNumber}`;
         sheetElement.style.zIndex = (500 - sheetNumber).toString(); 
         
-        // Notice the new delete button inside the HTML here
+        // CRITICAL FIX: Notice the single quotes added around '${item.id}'
         sheetElement.innerHTML = `
             <div class="page-content">
-                <button class="delete-btn" onclick="window.deleteMemory(${item.id}, '${item.image_url}')">✖</button>
+                <button class="delete-btn" onclick="window.deleteMemory('${item.id}', '${item.image_url}')">✖</button>
                 <div class="img-container">
                     <img src="${item.image_url}" alt="Memory ${sheetNumber}">
                 </div>
@@ -265,7 +255,6 @@ function renderLivePages(memoriesArray) {
 
     updateBookElementsContext();
     endLeaf.style.zIndex = "0";
-
     resetBookStateStyleAnchors();
 }
 
